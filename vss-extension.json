@@ -1,0 +1,48 @@
+{
+  "manifestVersion": 1,
+  "description": "Adds an editable table to the work item form",
+  "categories": [
+    "Azure Boards"
+  ],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+   "scopes": [
+    "vso.identity",
+    "vso.graph"
+  ],
+  "contributions": [
+    {
+      "id": "workitem-table-tab",
+      "type": "ms.vss-work-web.work-item-form-control",
+      "targets": [
+        "ms.vss-work-web.work-item-form"
+      ],
+      "properties": {
+        "name": "workitem table tab",
+        "uri": "index.html",
+        "height": 500
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "dist",
+      "addressable": true
+    }
+  ],
+  "resources": [
+    {
+      "type": "Microsoft.VisualStudio.Services.Icons.Default",
+      "properties": {
+        "small": "images/table.png",
+        "large": "images/table.png"
+      }
+    }
+  ],
+  "icons": {
+    "default": "images/table.png"
+  }
+}

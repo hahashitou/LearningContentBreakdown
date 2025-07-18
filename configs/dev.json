@@ -1,0 +1,8 @@
+{
+    "id": "workitem-table-tab",
+    "name": "Editable Table on Work Item",
+    "publisher": "PDETs-dev",
+    "version": "1.0.5",
+    "public": false,
+    "baseUri": "https://localhost:3000"
+}

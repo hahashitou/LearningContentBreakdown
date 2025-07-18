@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        // {
+        //     "name": "Launch Edge",
+        //     "request": "launch",
+        //     "type": "pwa-msedge",
+        //     "url": "https://localhost:3000/",
+        //     "webRoot": "${workspaceFolder}",
+        //     "sourceMaps": true,
+        //     "trace": true
+        // },
+        {
+            "name": "Launch Chrome",
+            "type": "chrome",
+            "request": "launch",
+            "url": "https://localhost:3000/",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+            "trace": true
+        },
+        {
+            "name": "Attach to Chrome",
+            "type": "chrome",
+            "request": "attach",
+            "url": "https://localhost:3000/",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+            "trace": true
+        }
+    ]
+}

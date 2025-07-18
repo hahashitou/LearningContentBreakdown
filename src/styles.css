@@ -1,0 +1,64 @@
+.container {
+    width: 100%;
+    height: 100%;
+}
+
+.table {
+    width: 100%;
+}
+
+.create_work_items_container {
+    width: 100%;
+}
+
+.create_work_items {
+    width: 200px;
+    height: 40px !important;
+    border-radius: 5px;
+    position: absolute;
+    margin-top: 20px;
+    left: 20px;
+}
+
+
+.add_record_button, .delete-button {
+    border-radius: 5px;
+    border-color: var(--bolt-button-border-color, #ccc) !important;
+    background-color: transparent !important;
+} 
+.delete-button
+{
+    font-weight: normal;
+}
+
+
+.summary-button-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+    background-color: none;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.ant-table .ant-table-summary {
+    height: 50px;
+    width: 100%;
+}
+
+.ant-table .ant-table-summary > tr > td {
+    padding: 0 !important;
+    border: none !important;
+}
+
+
+
+/* .single-text-field {
+    height: 35px;
+    border-color: transparent;
+}
+
+.custom-text-field {
+    border-color: transparent;
+} */
