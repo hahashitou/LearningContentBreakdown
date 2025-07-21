@@ -1,30 +1,18 @@
 import React, { JSX, useEffect, useRef, useState } from "react";
-import { DatePicker, Flex, Select, Table } from 'antd';
+import { DatePicker, Flex, Radio, Select, Table, TableProps } from 'antd';
 import { Button } from 'azure-devops-ui/Button';
 import { TextField, TextFieldWidth } from 'azure-devops-ui/TextField';
 import Column from 'antd/es/table/Column';
-import { Toggle } from 'azure-devops-ui/Toggle';
-import { Link } from 'azure-devops-ui/Link';
 import { ButtonGroup } from "azure-devops-ui/ButtonGroup";
-import { Spinner, SpinnerSize } from 'azure-devops-ui/Spinner';
-import { ObservableValue } from 'azure-devops-ui/Core/Observable';
-import dayjs from 'dayjs';
 import { setFieldValue } from "./WorkItemForm";
-import {
-    IdentityPickerDropdown,
-    IIdentity,
-    IPeoplePickerProvider,
-    IPersonaConnections,
-} from "azure-devops-ui/IdentityPicker";
-import { IdentityPickerComponent } from "./components/IdentityPickerComponent";
-import { IdentityPickerDropdownWrapper } from "./components/peoplePickerComponent";
-// import {IdentityPickerDropdownWrapper } from "./components/IdentityPickerDropdownWrapper";
+import { IdentityPickerDropdownWrapper } from "./components/IdentityPickerDropdownWrapper";
 import './styles.css';
 import { DurationInput } from "./components/DurationPickerCompont";
+import { useIdentityCache } from "./api/identityCache";
 
 // define the title for the table
 export interface IPOCTableItem {
-    id?: string;
+    key: React.Key;
     learningContentTitle: string;
     Modality: string;
     LearningContentDescription: string;
@@ -36,44 +24,56 @@ export const EditableTable = (): JSX.Element => {
     const [tableItems, setTableItems] = useState<IPOCTableItem[]>([]);
     const [dropdownList, setDropdownList] = useState<string[]>([]);
     const [filteredDropdownList, setFilteredDropdownList] = useState<string[]>([]);
+    const [selectionType, setSelectionType] = useState<'checkbox' | 'radio'>('checkbox');
+    const [validationErrors, setValidationErrors] = useState<{ [key: string]: string[] }>({});
+    const { loading: identityLoading, error: identityError } = useIdentityCache("WWLOpsTest");
 
-    const tableList = [{
-        id: '1',
-        learningContentTitle: "Learning Content1",
-        Modality: "Second Nature",
-        LearningContentDescription: "This is a sample description for the learning content.",
-        CourseLength: "2 hours",
-        AssignedTo: "User2"
-    },
-    {
-        id: '2',
-        learningContentTitle: "Learning Content2",
-        Modality: "Learning Path",
-        LearningContentDescription: "This is another sample description for the learning content.",
-        CourseLength: "1 hour",
-        AssignedTo: "User3"
-    },
-    {
-        id: '3',
-        learningContentTitle: "Learning Content3",
-        Modality: "Virtual Instructor-Led Training",
-        LearningContentDescription: "This is yet another sample description for the learning content.",
-        CourseLength: "3 hours",
-        AssignedTo: "User4"
-    }]
 
+    const tableList = [] as IPOCTableItem[];
+    // 验证函数：检查单行是否完整
+    const validateRow = (item: IPOCTableItem): string[] => {
+        const errors: string[] = [];
+        if (!item.learningContentTitle?.trim()) {
+            errors.push('Learning content title is required');
+        }
+        return errors;
+    };
+
+    // 验证所有行数据
+    const validateAllRows = (items: IPOCTableItem[]): boolean => {
+        const newValidationErrors: { [key: string]: string[] } = {};
+        let isValid = true;
+
+        items.forEach((item, index) => {
+            const rowErrors = validateRow(item);
+            if (rowErrors.length > 0) {
+                newValidationErrors[item.key.toString()] = rowErrors;
+                isValid = false;
+            }
+        });
+
+        setValidationErrors(newValidationErrors);
+        return isValid;
+    };
+
+    // 保存数据到字段（只有验证通过才保存）
+    const saveToField = (items: IPOCTableItem[]) => {
+        if (items.length === 0 || validateAllRows(items)) {
+            setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(items));
+        }
+    };
     useEffect(() => {
-        // Fetch initial data or set default values
         const fetchData = async () => {
-            // Simulate fetching data from an API or service
-            // In a real application, you would replace this with an actual API call
+            //初始化table的数据并保存到对应的field
             setTableItems(tableList);
             setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(tableList));
+            //加载下拉菜单项
             fetchDropdownList();
         };
         fetchData();
     }, []);
 
+    //实时更新tableItems的引用
     const tableItemsRef = useRef(tableItems);
     useEffect(() => {
         tableItemsRef.current = tableItems;
@@ -81,28 +81,30 @@ export const EditableTable = (): JSX.Element => {
 
 
     // event handlers
-    const LearningContentTitleChanged = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, value: string, index: number): void => {
+    const LearningContentTitleChanged = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, index: number): void => {
         const newTableItems = [...tableItems];
         newTableItems[index].learningContentTitle = event.target.value;
         setTableItems(newTableItems);
-        setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
+        saveToField(newTableItems);
     };
-    const LearningContentDescription = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, value: string, index: number): void => {
+    const LearningContentDescription = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, index: number): void => {
         const newTableItems = [...tableItems];
         newTableItems[index].LearningContentDescription = event.target.value;
         setTableItems(newTableItems);
-        setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
+        //setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
+        saveToField(newTableItems);
     };
 
-    const modalityChanged = (value: string, option: any, index: number): void => {
+    const modalityChanged = (value: string, index: number): void => {
         const newTableItems = [...tableItems];
         newTableItems[index].Modality = value;
         setTableItems(newTableItems);
         setFilteredDropdownList(dropdownList);
-        setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
+        //setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
+        saveToField(newTableItems);
     };
 
-    const modalitySearched = (value: string, option: any, index: number): void => {
+    const modalitySearched = (value: string): void => {
         if (!value) {
             setFilteredDropdownList(dropdownList);
         } else {
@@ -113,50 +115,68 @@ export const EditableTable = (): JSX.Element => {
         }
     };
 
-    // const CourseLengthChanged = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, value: string, index: number): void => {
-    //     const newTableItems = [...tableItems];
-    //     newTableItems[index].CourseLength = event.target.value;
-    //     setTableItems(newTableItems);
-    //     setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
-    // }
-
-
     const CourseLengthChanged = (hours: number, minutes: number, index: number) => {
-        console.log('Duration selected:', hours, 'hours', minutes, 'minutes');
-
         const hour = hours + 'hour';
         const min = minutes + 'min';
         const courseLenght = hours > 0 ? (hour + min) : min;
         const newTableItems = [...tableItems];
         newTableItems[index].CourseLength = courseLenght;
         setTableItems(newTableItems);
-        setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
+        //setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
+        saveToField(newTableItems);
     };
 
+    // 处理身份选择变更
+    const handleAssignedToChange = (identity: any, index: number) => {
+        const newTableItems = [...tableItems];
+        newTableItems[index].AssignedTo = identity?.displayName || "";
+        setTableItems(newTableItems);
+        //setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newTableItems));
+        saveToField(newTableItems);
+    };
 
     //button handlers
     const addRecord = () => {
         const newItem: IPOCTableItem = {
-            id: Date.now().toString(),
+            key: Date.now().toString(),
             learningContentTitle: "",
             LearningContentDescription: "",
             Modality: "",
             CourseLength: "",
             AssignedTo: ""
         };
-
-        setTableItems(prevItems => {
-            const newItems = [...prevItems, newItem];
-            setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newItems));
-            return newItems;
-        });
+        const newItems = [...tableItems, newItem];
+        setTableItems(newItems);
+        validateAllRows(newItems);
+        //setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newItems));
+        // setTableItems(prevItems => {
+        //     const newItems = [...prevItems, newItem];
+        //    setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newItems));
+        //     return newItems;
+        // });
     };
+
     const deleteRecord = (index: number) => {
-        setTableItems(prevItems => {
-            const newItems = [...prevItems];
-            newItems.splice(index, 1);
-            return newItems;
-        });
+        const newItems = [...tableItems];
+        newItems.splice(index, 1);
+        setTableItems(newItems);
+        saveToField(newItems);
+        //setFieldValue("Custom.IntakeRequestCourseDetails", JSON.stringify(newItems));
+        // setTableItems(prevItems => {
+        //     const newItems = [...prevItems];
+        //     newItems.splice(index, 1);
+        //     return newItems;
+        // });
+    };
+
+    const rowSelection: TableProps<IPOCTableItem>['rowSelection'] = {
+        onChange: (selectedRowKeys: React.Key[], selectedRows: IPOCTableItem[]) => {
+            console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+        },
+        getCheckboxProps: (record: IPOCTableItem) => ({
+            disabled: record.learningContentTitle === 'Disabled Title',
+            name: record.learningContentTitle,
+        }),
     };
 
     // Dropdown list
@@ -198,7 +218,22 @@ export const EditableTable = (): JSX.Element => {
 
     return (
         <Flex className='container' justify='start' wrap align='start' >
+            <Radio.Group onChange={(e) => setSelectionType(e.target.value)} value={selectionType}>
+                {/* <Radio value="checkbox">Checkbox</Radio>
+                <Radio value="radio">radio</Radio> */}
+            </Radio.Group>
+            {identityError && (
+                <div style={{ color: 'red', marginBottom: '10px' }}>
+                    Error loading identities: {identityError}
+                </div>
+            )}
+            {/* {Object.keys(validationErrors).length > 0 && (
+                <div style={{ color: 'orange', marginBottom: '10px', padding: '8px', backgroundColor: '#fff7e6', border: '1px solid #ffd666', borderRadius: '4px' }}>
+                    <strong>Validation Warning:</strong> Please complete all required fields before saving. Some rows have missing information.
+                </div>
+            )} */}
             <Table<IPOCTableItem>
+                rowSelection={{ type: selectionType, ...rowSelection }}
                 dataSource={tableItems}
                 className='table'
                 pagination={{ pageSize: 5 }}
@@ -227,11 +262,11 @@ export const EditableTable = (): JSX.Element => {
                     render={(value: string, record: IPOCTableItem, index: number) => (
                         <TextField
                             ariaLabel="Learning content title"
-                            value={record.learningContentTitle}
-                            onChange={(e) => LearningContentTitleChanged(e, value, index)}
+                            value={value}
+                            onChange={(e) => LearningContentTitleChanged(e, index)}
                             placeholder="Please input learning content title"
                             width={TextFieldWidth.auto}
-                            className="single-text-field"
+                            className={!value? "custom-text-field error" : "custom-text-field"}
                         />
                     )}
                     sorter={(a, b) => a.learningContentTitle.localeCompare(b.learningContentTitle)}
@@ -246,10 +281,10 @@ export const EditableTable = (): JSX.Element => {
                     render={(value: string, record: IPOCTableItem, index: number) => (
                         <TextField
                             ariaLabel="Learning content description"
-                            value={record.LearningContentDescription}
+                            value={value}
                             multiline
                             rows={2}
-                            onChange={(e) => LearningContentDescription(e, value, index)}
+                            onChange={(e) => LearningContentDescription(e, index)}
                             placeholder="Please input learning content description"
                             width={TextFieldWidth.auto}
                             className="custom-text-field"
@@ -266,10 +301,9 @@ export const EditableTable = (): JSX.Element => {
                         <Select
                             allowClear
                             showSearch
-                            style={{ width: '100%', minWidth: '120px' }}
                             placeholder="Please select"
-                            onChange={(value, option) => modalityChanged(value, option, index)}
-                            onSearch={(value) => modalitySearched(value, null, index)}
+                            onChange={(value, option) => modalityChanged(value, index)}
+                            onSearch={(value) => modalitySearched(value)}
                             value={record.Modality}
                             className="custom-text-field"
                             options={filteredDropdownList.map(item => ({ label: item, value: item }))}
@@ -278,22 +312,6 @@ export const EditableTable = (): JSX.Element => {
                     )}
 
                 />
-
-                {/* <Column
-                    title="Course length"
-                    dataIndex="CourseLength"
-                    key="CourseLength"
-                    render={(value: string, record: IPOCTableItem, index: number) => (
-                        <TextField
-                            ariaLabel="Course length"
-                            value={record.CourseLength}
-                            onChange={(e) => CourseLengthChanged(e, value, index)}
-                            placeholder="Please input course length"
-                            width={TextFieldWidth.auto}
-                            className="single-text-field"
-                        />
-                    )}
-                /> */}
 
                 <Column
                     title="Course length"
@@ -309,7 +327,6 @@ export const EditableTable = (): JSX.Element => {
                     )}
                 />
 
-
                 <Column
                     title="Assigned to"
                     dataIndex="AssignedTo"
@@ -317,7 +334,11 @@ export const EditableTable = (): JSX.Element => {
                     align="center"
                     // IdentityPicker
                     render={(value: string, record: IPOCTableItem, index: number) => (
-                        <IdentityPickerDropdownWrapper />
+
+                        <IdentityPickerDropdownWrapper
+                            onChange={(identity) => handleAssignedToChange(identity, index)}
+                        />
+
                     )}
 
                 />

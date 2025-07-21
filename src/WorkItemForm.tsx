@@ -22,6 +22,7 @@ export const setFieldValue = async (fieldReferenceName: string, value: any): Pro
     if (!fieldReferenceName || !value) {
         return false;
     }
+    console.debug(`Setting field value for ${fieldReferenceName}:`, value);
     const workItemFormService = await getWorkItemFormService();
     if (!workItemFormService) {
         return false;
@@ -34,9 +35,11 @@ export const getFieldValue = async (fieldReferenceName: string) => {
         return null;
     }
     const workItemFormService = await getWorkItemFormService();
+   
     if (!workItemFormService) {
         return null;
     }
+     console.debug(`Getting field value for workItemFormService`);
     return await workItemFormService.getFieldValues([fieldReferenceName]);
 }
 
@@ -54,6 +57,7 @@ const getWorkItemFormService = async () => {
     if (WorkItemFormService) {
         return WorkItemFormService;
     }
+    console.debug('Initializing WorkItemFormService');
     WorkItemFormService = await SDK.getService<IWorkItemFormService>('ms.vss-work-web.work-item-form');
     return WorkItemFormService;
 }

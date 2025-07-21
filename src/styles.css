@@ -1,3 +1,7 @@
+#root{
+    display: flex;
+    width: 100%;
+}
 .container {
     width: 100%;
     height: 100%;
@@ -51,7 +55,9 @@
     padding: 0 !important;
     border: none !important;
 }
-
+.custom-text-field.error {
+    border: 1px solid red !important;
+}
 
 
 /* .single-text-field {

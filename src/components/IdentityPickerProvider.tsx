@@ -34,6 +34,7 @@ export class IdentityPickerProvider implements IPeoplePickerProvider {
     public loadRecentIdentities() {
         const key = `recentIdentities_${this.orgName}`;
         const stored = localStorage.getItem(key);
+        console.debug('Loading recent identities from localStorage:', stored);
         if (stored) {
             try {
                 const parsed = JSON.parse(stored) as IIdentity[];
@@ -45,8 +46,13 @@ export class IdentityPickerProvider implements IPeoplePickerProvider {
     }
 
     private saveRecentIdentities() {
-        const key = `recentIdentities_${this.orgName}`;
-        localStorage.setItem(key, JSON.stringify(this.recentIdentities));
+        try {
+            const key = `recentIdentities_${this.orgName}`;
+            localStorage.setItem(key, JSON.stringify(this.recentIdentities));
+            console.debug('Saved recent identities to localStorage:', this.recentIdentities);
+        } catch (error) {
+            console.warn("保存 recent identities 失败:", error);
+        }
     }
 
     public onFilterIdentities(filter: string, selectedItems?: IIdentity[]) {
@@ -77,12 +83,10 @@ export class IdentityPickerProvider implements IPeoplePickerProvider {
         if (this.currentPersonas.length > 0) {
             return this.filterList(filter, selectedItems);
         } else {
-            return new Promise<IIdentity[]>((resolve, reject) =>
-                setTimeout(() => {
-                    this.currentPersonas = this.personas;
-                    resolve(this.filterList(filter, selectedItems));
-                }, 800)
-            );
+            return new Promise<IIdentity[]>((resolve, reject) => {
+                this.currentPersonas = this.personas;
+                resolve(this.filterList(filter, selectedItems));
+            });
         }
     }
 
